@@ -1,11 +1,13 @@
 # Mida Python Client
 This repository contains a Python client for interacting with the [Mida.so](https://app.mida.so/).
 ## Installation
-Clone the repository:
+Clone the repository and install it:
 ```bash
 git clone https://github.com/mida-so/mida-python.git
+cd mida-python
+pip install .
 ```
-Install the required dependencies:
+Or just install the only dependency and use `mida.py` directly:
 ```bash
 pip install requests
 ```
@@ -27,6 +29,9 @@ elif experiment == 'Variant 2':
 # set an event
 mida_instance.set_event('event_name', 'your-distinct-id')
 
+# set an event with properties (e.g. revenue tracking)
+mida_instance.set_event('Purchase', 'your-distinct-id', {'revenue': 99.99, 'quantity': 1, 'currency': 'USD'})
+
 # reload feature flags for a user
 mida_instance.on_feature_flags('your-distinct-id')
 
@@ -46,7 +51,7 @@ mida_instance.set_attribute('your-distinct-id', attributes)
 ```
 ## Methods
 - `get_experiment(experiment_key, distinct_id)`: Retrieves the assigned variant for the specified experiment and user.
-- `set_event(event_name, distinct_id)`: Sets an event for the specified user.
+- `set_event(event_name, distinct_id, properties=None)`: Sets an event for the specified user, with optional event properties (a dict).
 - `is_feature_enabled(key)`: Checks if a specific feature flag is enabled for the current user.
 - `on_feature_flags(distinct_id)`: Reloads the feature flags for the specified user.
 - `set_attribute(distinct_id, properties)`: Sets user attributes for the specified user with the given properties.
