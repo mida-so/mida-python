@@ -39,7 +39,7 @@ class Mida:
             print(f'Other error occurred: {err}')
             return None
 
-    def set_event(self, event_name, distinct_id):
+    def set_event(self, event_name, distinct_id, properties=None):
         if not event_name or not (distinct_id or self.user_id):
             raise AssertionError("You need to set an event name and user distinct ID")
 
@@ -48,6 +48,9 @@ class Mida:
             'name': event_name,
             'distinct_id': distinct_id or self.user_id
         }
+        if properties:
+            # Same wire format as the Node.js and PHP SDKs: properties as a JSON string.
+            data['properties'] = json.dumps(properties)
         headers = {'Content-type': 'application/json', 'user-agent':'mida-python'}
 
         try:
