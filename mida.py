@@ -61,16 +61,19 @@ class Mida:
             print(f'Other error occurred: {err}')
 
 
-    def cached_feature_flag(self):
-        cache_key = f"{self.public_key}:{self.user_id}"
-        return self.feature_flag_cache.get(cache_key, [])
+    def _feature_flag_cache_key(self, distinct_id=None):
+        # Flags are cached per user so one user's flags are never served to another.
+        return f"{self.public_key}:{distinct_id or self.user_id}"
 
-    def is_feature_enabled(self, key):
-        self.enabled_features = self.cached_feature_flag()
+    def cached_feature_flag(self, distinct_id=None):
+        return self.feature_flag_cache.get(self._feature_flag_cache_key(distinct_id), [])
+
+    def is_feature_enabled(self, key, distinct_id=None):
+        self.enabled_features = self.cached_feature_flag(distinct_id)
         return key in self.enabled_features
 
     def on_feature_flags(self, distinct_id=None):
-        cached_items = len(self.cached_feature_flag())
+        cached_items = len(self.cached_feature_flag(distinct_id))
         try:
             self.reload_feature_flags(distinct_id)
             if not cached_items:
@@ -83,7 +86,7 @@ class Mida:
     def reload_feature_flags(self, distinct_id=None):
         data = {
             'key': self.public_key,
-            'user_id': distinct_id
+            'user_id': distinct_id or self.user_id
         }
         headers = {'Content-type': 'application/json', 'user-agent': 'mida-python'}
         try:
@@ -93,7 +96,7 @@ class Mida:
             response.raise_for_status()
             result = response.json()
             self.enabled_features = result
-            cache_key = f"{self.public_key}:{self.user_id}"
+            cache_key = self._feature_flag_cache_key(distinct_id)
             self.feature_flag_cache[cache_key] = result
 
             if len(self.feature_flag_cache) > self.max_cache_size:

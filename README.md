@@ -27,11 +27,11 @@ elif experiment == 'Variant 2':
 # set an event
 mida_instance.set_event('event_name', 'your-distinct-id')
 
-# reload feature flags for a user
+# load (and cache) feature flags for a user
 mida_instance.on_feature_flags('your-distinct-id')
 
-# check if a feature flag is enabled
-is_enabled = mida_instance.is_feature_enabled('feature_flag_key')
+# check if a feature flag is enabled for that user
+is_enabled = mida_instance.is_feature_enabled('feature_flag_key', 'your-distinct-id')
 if is_enabled:
     print('Feature flag is enabled')
 else:
@@ -47,8 +47,8 @@ mida_instance.set_attribute('your-distinct-id', attributes)
 ## Methods
 - `get_experiment(experiment_key, distinct_id)`: Retrieves the assigned variant for the specified experiment and user.
 - `set_event(event_name, distinct_id)`: Sets an event for the specified user.
-- `is_feature_enabled(key)`: Checks if a specific feature flag is enabled for the current user.
-- `on_feature_flags(distinct_id)`: Reloads the feature flags for the specified user.
+- `is_feature_enabled(key, distinct_id=None)`: Checks if a feature flag is enabled for the specified user. Flags are cached per user, so load them first with `on_feature_flags(distinct_id)` and pass the same `distinct_id`.
+- `on_feature_flags(distinct_id)` / `reload_feature_flags(distinct_id)`: Fetches and caches the feature flags for the specified user.
 - `set_attribute(distinct_id, properties)`: Sets user attributes for the specified user with the given properties.
 ## Contributing
 Contributions are welcome! If you find any issues or have suggestions for improvement, please create a pull request.
