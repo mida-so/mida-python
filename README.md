@@ -9,7 +9,7 @@ Server-side A/B testing and feature flags for Python, for use with [Mida](https:
 ## Install
 
 ```bash
-pip install git+https://github.com/mida-so/mida-python.git
+pip install mida-python
 ```
 
 ## Quick start
