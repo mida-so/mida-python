@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mida-python"
+version = "1.1.0"
+description = "Mida server-side A/B testing and feature flags for Python"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Mida.so", email = "hello@mida.so" }]
+requires-python = ">=3.8"
+dependencies = ["requests>=2.20"]
+keywords = ["mida", "ab testing", "experiment", "feature flags", "split testing"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://www.mida.so"
+Documentation = "https://docs.mida.so/docs/server-side/sdks"
+Source = "https://github.com/mida-so/mida-python"
+
+[tool.setuptools]
+py-modules = ["mida"]

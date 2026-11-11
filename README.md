@@ -1,58 +1,116 @@
-# Mida Python Client
-This repository contains a Python client for interacting with the [Mida.so](https://app.mida.so/).
-## Installation
-Clone the repository:
+# Mida Python SDK
+
+Server-side A/B testing and feature flags for Python, for use with [Mida](https://www.mida.so).
+
+- Python 3.8 or later
+- Depends only on `requests`
+- Safe to share across threads
+
+## Install
+
 ```bash
-git clone https://github.com/mida-so/mida-python.git
+pip install git+https://github.com/mida-so/mida-python.git
 ```
-Install the required dependencies:
-```bash
-pip install requests
-```
-## Usage
-Import the `Mida` class to your Python project. Create an instance of `Mida` using the project key from your Mida.so account. Use the available methods to interact with the Mida API.
-Example usage:
+
+## Quick start
+
+Create one client per process and share it.
+
 ```python
 from mida import Mida
-# replace 'your-project-key' with your actual key
-mida_instance = Mida('your-project-key')
-# replace 'your-experiment-key' and 'your-distinct-id' with actual values
-experiment = mida_instance.get_experiment('your-experiment-key', 'your-distinct-id')
-if experiment == 'Control':
-    print('Control variant execute')
-elif experiment == 'Variant 1':
-    print('Variant 1 variant execute')
-elif experiment == 'Variant 2':
-    print('Variant 2 variant execute')
-# set an event
-mida_instance.set_event('event_name', 'your-distinct-id')
 
-# reload feature flags for a user
-mida_instance.on_feature_flags('your-distinct-id')
+mida = Mida('YOUR_PROJECT_KEY')  # Dashboard → Settings → API
+user_id = 'user_42'
 
-# check if a feature flag is enabled
-is_enabled = mida_instance.is_feature_enabled('feature_flag_key')
-if is_enabled:
-    print('Feature flag is enabled')
+variant = mida.get_experiment('YOUR_EXPERIMENT_KEY', user_id)
+if variant == 'Variant 1':
+    ...  # treatment
 else:
-    print('Feature flag is disabled')
+    ...  # 'Control', or None when the user is not in the experiment
 
-# set user attributes
-attributes = {
-    'name': 'John Doe',
-    'email': 'john@example.com'
-}
-mida_instance.set_attribute('your-distinct-id', attributes)
+# When the user converts:
+mida.set_event('signup_completed', user_id)
 ```
+
+EU accounts must select the EU region:
+
+```python
+mida = Mida('YOUR_PROJECT_KEY', region='eu')
+```
+
 ## Methods
-- `get_experiment(experiment_key, distinct_id)`: Retrieves the assigned variant for the specified experiment and user.
-- `set_event(event_name, distinct_id)`: Sets an event for the specified user.
-- `is_feature_enabled(key)`: Checks if a specific feature flag is enabled for the current user.
-- `on_feature_flags(distinct_id)`: Reloads the feature flags for the specified user.
-- `set_attribute(distinct_id, properties)`: Sets user attributes for the specified user with the given properties.
-## Contributing
-Contributions are welcome! If you find any issues or have suggestions for improvement, please create a pull request.
-## Support
-For support, please contact us at hello@mida.so.
+
+### `get_experiment(experiment_key, distinct_id)`
+
+Returns the variant for this user: `'Control'`, `'Variant 1'`, `'Variant 2'`, and so on.
+Returns `None` when the user is not in the experiment, which happens when the experiment is not
+live or the key does not match one in the project. The assignment is sticky: the same
+`distinct_id` always gets the same variant.
+
+If the request fails, it logs a warning and returns `None`, so your code shows the original
+experience.
+
+### `set_event(event_name, distinct_id, properties=None)`
+
+Records a conversion event. `event_name` must match the goal's event name in Mida, and
+`distinct_id` must be the same value passed to `get_experiment`. Returns `True` when recorded.
+
+```python
+mida.set_event('Purchase', user_id, {'revenue': 49.99, 'quantity': 1, 'currency': 'USD'})
+```
+
+### `set_attribute(distinct_id, properties)`
+
+Sets user attributes for targeting and segmentation.
+
+```python
+mida.set_attribute(user_id, {'plan': 'pro', 'country': 'US'})
+```
+
+### `is_feature_enabled(key, distinct_id)`
+
+Returns whether a feature flag is on for this user. Always pass `distinct_id`, since flags with a
+rollout percentage or user targeting differ per user. If the request fails, it logs a warning and
+returns `False`.
+
+Flags are cached per user for 60 seconds. `get_feature_flags(distinct_id)` lists a user's
+enabled flags, `get_feature_flag_payload(key, distinct_id)` returns a flag's payload, and
+`reload_feature_flags(distinct_id)` skips the cache.
+
+## Options
+
+Pass as keyword arguments, or as a dict in the second argument.
+
+| Option | Default | Purpose |
+|---|---|---|
+| `region` | `'us'` | `'eu'` for EU accounts |
+| `timeout` | `10` | Request timeout in seconds |
+| `feature_flag_ttl` | `60` | Seconds a user's flags are cached; `0` disables caching |
+| `max_cache_size` | `50000` | Maximum number of users whose flags are cached |
+| `raise_errors` | `False` | Raise `MidaError` instead of logging and failing safe |
+| `session` | | A `requests.Session` to reuse, for proxies or retries |
+| `host` | | Override the API host, for tests |
+
+## Upgrading from 1.0
+
+- `is_feature_enabled` works now. Earlier versions misread the API response and always
+  returned `False`.
+- Requests time out after 10 seconds. Earlier versions could wait forever.
+- Errors are logged through the `mida` logger instead of printed.
+- `is_feature_enabled(key)` without a `distinct_id` still uses the user from the last
+  `on_feature_flags(distinct_id)` call, but passing `distinct_id` is safer when one client
+  serves many users.
+
+## Tests
+
+```bash
+python -m unittest test_mida
+```
+
+To also run against the real API, set `MIDA_PROJECT_KEY` (and `MIDA_REGION=eu` for EU
+accounts). Set `MIDA_EXPERIMENT_KEY` to a live server-side experiment to check assignment, and
+`MIDA_EVENT_NAME` to record its goal event.
+
 ## License
-This project is licensed under the MIT License - see the `LICENSE.md` file for details.
+
+MIT
